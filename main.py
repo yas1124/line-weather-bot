@@ -1,15 +1,15 @@
+import os
 import requests
 from datetime import datetime
 
-# --- あなたの設定（実データで置換済） ---
 LINE_ACCESS_TOKEN = 'QgHGfokoTBC9Zm8awXgPUN2O0nYduQ4Tq53rhKOWNwGC0+Fk7sy8nycfz8u6RoxMFBJeuJRATPErGNFrcQbF1B+4tfs9nFy3g8U5Rmwh+ffQY4aa4s1XVN7KMUyxSt8dHus1xu3vTrPzdPSjBH73hwdB04t89/1O/w1cDnyilFU='
 USER_ID = 'U7b0b2d0689901f95f42f822f5b94d5e1'
 OPENWEATHER_API_KEY = '16998bf86c89f7d0d25dca04ccea5411'
 
-LAT = 35.7388  # 緯度：石神井公園
-LON = 139.5862  # 経度：石神井公園
+LAT = 35.7388
+LON = 139.5862
+FLAG_FILE = "already_sent.txt"
 
-# --- 天気アイコン辞書 ---
 WEATHER_ICONS = {
     'clear': '☀️',
     'clouds': '☁️',
@@ -20,7 +20,6 @@ WEATHER_ICONS = {
     'mist': '🌫️'
 }
 
-# --- 天気メッセージ生成 ---
 def get_weather_message():
     url = f'https://api.openweathermap.org/data/2.5/forecast?lat={LAT}&lon={LON}&appid={OPENWEATHER_API_KEY}&lang=ja&units=metric'
     res = requests.get(url).json()
@@ -28,7 +27,7 @@ def get_weather_message():
     if res.get("cod") != "200":
         return "天気情報を取得できませんでした。"
 
-    forecasts = res['list'][:8]  # 3時間ごと×8 = 24時間分
+    forecasts = res['list'][:8]
     lines = []
     temps = []
     needs_umbrella = False
@@ -58,7 +57,6 @@ def get_weather_message():
 
     return message
 
-# --- LINE通知関数 ---
 def send_line_message(user_id, message):
     url = 'https://api.line.me/v2/bot/message/push'
     headers = {
@@ -72,7 +70,17 @@ def send_line_message(user_id, message):
     response = requests.post(url, headers=headers, json=data)
     print(f'送信結果: {response.status_code} / {response.text}')
 
-# --- 実行部（通知は1回だけ） ---
 if __name__ == '__main__':
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    if os.path.exists(FLAG_FILE):
+        with open(FLAG_FILE, 'r') as f:
+            if today in f.read():
+                print("通知済みのためスキップします。")
+                exit()
+
     message = get_weather_message()
     send_line_message(USER_ID, message)
+
+    with open(FLAG_FILE, 'w') as f:
+        f.write(today)
