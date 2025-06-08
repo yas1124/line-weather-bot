@@ -35,7 +35,7 @@ def get_weather_message():
 
     for f in forecasts:
         dt = datetime.fromtimestamp(f['dt'])
-        time_str = dt.strftime('%H:%M')
+        time_str = dt.strftime('%m/%d %H:%M')
         weather_main = f['weather'][0]['main'].lower()
         weather_desc = f['weather'][0]['description']
         temp = f['main']['temp']
@@ -72,7 +72,7 @@ def send_line_message(user_id, message):
     response = requests.post(url, headers=headers, json=data)
     print(f'送信結果: {response.status_code} / {response.text}')
 
-# --- 実行部（1回限り） ---
+# --- 実行部（通知は1回だけ） ---
 if __name__ == '__main__':
     message = get_weather_message()
     send_line_message(USER_ID, message)
