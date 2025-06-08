@@ -1,13 +1,3 @@
-if __name__ == "__main__": ブロックの中で1回だけ send_line_message(...) を呼ぶ
-
-ループ・再帰・スケジューラなし
-
-Webアプリ形式（Flaskなど）ではない → Renderの「Run Command」だけで実行可
-
-✅ 修正版 main.py（一度だけ通知する構造）
-python
-コピーする
-編集する
 import requests
 from datetime import datetime
 
@@ -45,7 +35,7 @@ def get_weather_message():
 
     for f in forecasts:
         dt = datetime.fromtimestamp(f['dt'])
-        time_str = dt.strftime('%m/%d %H:%M')  # 日付＋時間で見やすく
+        time_str = dt.strftime('%H:%M')
         weather_main = f['weather'][0]['main'].lower()
         weather_desc = f['weather'][0]['description']
         temp = f['main']['temp']
@@ -82,7 +72,7 @@ def send_line_message(user_id, message):
     response = requests.post(url, headers=headers, json=data)
     print(f'送信結果: {response.status_code} / {response.text}')
 
-# --- 実行部（1回だけ通知） ---
+# --- 実行部（1回限り） ---
 if __name__ == '__main__':
     message = get_weather_message()
     send_line_message(USER_ID, message)
