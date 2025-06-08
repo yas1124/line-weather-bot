@@ -1,44 +1,36 @@
 import requests
 from datetime import datetime
-import os
 
-# --- 設定 ---
+# --- あなたの設定（実データで置換済） ---
 LINE_ACCESS_TOKEN = 'QgHGfokoTBC9Zm8awXgPUN2O0nYduQ4Tq53rhKOWNwGC0+Fk7sy8nycfz8u6RoxMFBJeuJRATPErGNFrcQbF1B+4tfs9nFy3g8U5Rmwh+ffQY4aa4s1XVN7KMUyxSt8dHus1xu3vTrPzdPSjBH73hwdB04t89/1O/w1cDnyilFU='
 USER_ID = 'U7b0b2d0689901f95f42f822f5b94d5e1'
 OPENWEATHER_API_KEY = '16998bf86c89f7d0d25dca04ccea5411'
-LAT, LON = 35.7388, 139.5862  # 石神井公園
 
-# --- 天気アイコン ---
+LAT = 35.7388  # 緯度：石神井公園
+LON = 139.5862  # 経度：石神井公園
+
+# --- 天気アイコン辞書 ---
 WEATHER_ICONS = {
-    'clear': '☀️', 'clouds': '☁️', 'rain': '🌧️',
-    'drizzle': '🌦️', 'thunderstorm': '⛈️',
-    'snow': '❄️', 'mist': '🌫️'
+    'clear': '☀️',
+    'clouds': '☁️',
+    'rain': '🌧️',
+    'drizzle': '🌦️',
+    'thunderstorm': '⛈️',
+    'snow': '❄️',
+    'mist': '🌫️'
 }
 
-# --- フラグファイルのパス（通知日付を保存） ---
-FLAG_FILE = 'last_sent_date.txt'
-
-# --- LINE送信関数 ---
-def send_line_message(user_id, message):
-    url = 'https://api.line.me/v2/bot/message/push'
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {LINE_ACCESS_TOKEN}'
-    }
-    data = {'to': user_id, 'messages': [{'type': 'text', 'text': message}]}
-    res = requests.post(url, headers=headers, json=data)
-    print(f'送信結果: {res.status_code} / {res.text}')
-
-# --- 天気取得とメッセージ作成 ---
+# --- 天気メッセージ生成 ---
 def get_weather_message():
     url = f'https://api.openweathermap.org/data/2.5/forecast?lat={LAT}&lon={LON}&appid={OPENWEATHER_API_KEY}&lang=ja&units=metric'
     res = requests.get(url).json()
+
     if res.get("cod") != "200":
         return "天気情報を取得できませんでした。"
 
-    forecasts = res['list'][:8]
-    temps = []
+    forecasts = res['list'][:8]  # 3時間ごと×8 = 24時間分
     lines = []
+    temps = []
     needs_umbrella = False
 
     for f in forecasts:
@@ -63,27 +55,24 @@ def get_weather_message():
     if needs_umbrella:
         message += "☔ 傘を忘れずに！\n"
     message += "\n".join(lines)
+
     return message
 
-# --- 1日1回だけ通知する ---
-def already_sent_today():
-    today = datetime.now().strftime('%Y-%m-%d')
-    if os.path.exists(FLAG_FILE):
-        with open(FLAG_FILE, 'r') as f:
-            last_date = f.read().strip()
-            return last_date == today
-    return False
+# --- LINE通知関数 ---
+def send_line_message(user_id, message):
+    url = 'https://api.line.me/v2/bot/message/push'
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {LINE_ACCESS_TOKEN}'
+    }
+    data = {
+        'to': user_id,
+        'messages': [{'type': 'text', 'text': message}]
+    }
+    response = requests.post(url, headers=headers, json=data)
+    print(f'送信結果: {response.status_code} / {response.text}')
 
-def update_sent_date():
-    today = datetime.now().strftime('%Y-%m-%d')
-    with open(FLAG_FILE, 'w') as f:
-        f.write(today)
-
-# --- 実行 ---
+# --- 実行部 ---
 if __name__ == '__main__':
-    if already_sent_today():
-        print("本日はすでに通知済みです。")
-    else:
-        msg = get_weather_message()
-        send_line_message(USER_ID, msg)
-        update_sent_date()
+    message = get_weather_message()
+    send_line_message(USER_ID, message)
